@@ -6,8 +6,9 @@ const Registro = ({ iniciarSesion, irALogin }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -16,13 +17,42 @@ const Registro = ({ iniciarSesion, irALogin }) => {
       return;
     }
     if (password.length < 6) {
-      setError('La contraseña es muy corta.');
+      setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
 
-    // Aquí conectarías con el Backend para guardar el usuario
-    alert("¡Registro exitoso! Iniciando sesión...");
-    iniciarSesion({ nombre, email, rol: 'Cliente' });
+    setLoading(true);
+
+    try {
+      // CONEXIÓN REAL AL BACKEND (Punto 8b)
+      // Enviamos { nombre, email, password, role: "USER" }
+      // Nota: Tu backend asigna "USER" por defecto en el Controller, así que mandamos lo básico.
+      const response = await fetch('http://localhost:8081/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            nombre, 
+            email, 
+            password,
+            role: "USER" // Opcional, el backend lo pone por defecto
+        }),
+      });
+
+      if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg || 'Error al registrar usuario');
+      }
+
+      alert("¡Registro exitoso! Por favor inicia sesión.");
+      irALogin(); // Redirigimos al login para que ingrese sus credenciales
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,7 +78,9 @@ const Registro = ({ iniciarSesion, irALogin }) => {
             <label className="form-label text-muted">Confirmar Contraseña</label>
             <input type="password" className="form-control" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           </div>
-          <button type="submit" className="btn btn-success w-100 py-2 fw-bold">Registrarse</button>
+          <button type="submit" className="btn btn-success w-100 py-2 fw-bold" disabled={loading}>
+            {loading ? 'Registrando...' : 'Registrarse'}
+          </button>
         </form>
         <div className="mt-3 text-center">
           <small className="text-muted">¿Ya tienes cuenta? <button onClick={irALogin} className="btn btn-link text-success text-decoration-none fw-bold p-0 align-baseline">Inicia Sesión</button></small>

@@ -1,25 +1,45 @@
 import React, { useState } from 'react';
 
-const Login = ({ iniciarSesion, irARegistro }) => { // Agregamos irARegistro
+const Login = ({ iniciarSesion, irARegistro }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    // Validaciones
-    if (!email.includes('@')) {
-      setError('Por favor, ingresa un correo electrónico válido.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
+    try {
+      const response = await fetch('http://localhost:8081/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    iniciarSesion({ nombre: 'Estudiante', email, rol: 'Cliente' });
+      if (!response.ok) {
+        throw new Error('Credenciales incorrectas');
+      }
+
+      const data = await response.json();
+      console.log("Login exitoso:", data);
+
+      localStorage.setItem('token_huerto', data.token);
+
+      iniciarSesion({ 
+        nombre: data.nombre, 
+        email: email, 
+        role: data.role 
+      });
+
+    } catch (err) {
+      setError(err.message || 'Error al conectar con el servidor.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,19 +50,22 @@ const Login = ({ iniciarSesion, irARegistro }) => { // Agregamos irARegistro
         
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label text-muted">Correo Electrónico</label>
+            {/* CORRECCIÓN: Agregamos htmlFor e id para accesibilidad */}
+            <label htmlFor="email" className="form-label text-muted">Correo Electrónico</label>
             <input 
+              id="email"
               type="email" 
               className="form-control" 
-              placeholder="nombre@ejemplo.com"
+              placeholder="nombre@ejemplo.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required 
             />
           </div>
           <div className="mb-4">
-            <label className="form-label text-muted">Contraseña</label>
+            <label htmlFor="password" className="form-label text-muted">Contraseña</label>
             <input 
+              id="password"
               type="password" 
               className="form-control" 
               placeholder="••••••"
@@ -51,10 +74,11 @@ const Login = ({ iniciarSesion, irARegistro }) => { // Agregamos irARegistro
               required 
             />
           </div>
-          <button type="submit" className="btn btn-success w-100 py-2 fw-bold">Iniciar Sesión</button>
+          <button type="submit" className="btn btn-success w-100 py-2 fw-bold" disabled={loading}>
+            {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+          </button>
         </form>
         <div className="mt-3 text-center">
-          {/* Botón funcional hacia el registro */}
           <small className="text-muted">¿No tienes cuenta? <button onClick={irARegistro} className="btn btn-link text-success text-decoration-none fw-bold p-0 align-baseline">Regístrate</button></small>
         </div>
       </div>

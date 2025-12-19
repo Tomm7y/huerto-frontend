@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -14,14 +14,27 @@ function App() {
   const [usuario, setUsuario] = useState(null);
   const [carrito, setCarrito] = useState([]);
 
+  // NUEVO: Efecto para cargar usuario guardado al iniciar
+  useEffect(() => {
+    const usuarioGuardado = localStorage.getItem('usuario_huerto');
+    if (usuarioGuardado) {
+      setUsuario(JSON.parse(usuarioGuardado));
+    }
+  }, []);
+
   // Funciones globales
   const iniciarSesion = (userData) => {
     setUsuario(userData);
+    // NUEVO: Persistencia en localStorage
+    localStorage.setItem('usuario_huerto', JSON.stringify(userData));
     setVista('catalogo');
   };
 
   const cerrarSesion = () => {
     setUsuario(null);
+    // NUEVO: Limpiar almacenamiento
+    localStorage.removeItem('usuario_huerto');
+    localStorage.removeItem('token_huerto'); // También borramos el token JWT
     setVista('home');
     setCarrito([]);
   };
@@ -42,8 +55,10 @@ function App() {
       
       <main className="flex-grow-1 d-flex flex-column w-100">
         {vista === 'home' && <Home setVista={setVista} />}
+        {/* Pasamos funciones de navegación correctas */}
         {vista === 'login' && <Login iniciarSesion={iniciarSesion} irARegistro={() => setVista('registro')} />}
         {vista === 'registro' && <Registro iniciarSesion={iniciarSesion} irALogin={() => setVista('login')} />}
+        
         {vista === 'catalogo' && <Catalogo agregarAlCarrito={agregarAlCarrito} />}
         {vista === 'carrito' && <Carrito carrito={carrito} setCarrito={setCarrito} setVista={setVista} usuario={usuario} />}
         {vista === 'perfil' && <Perfil usuario={usuario} />}
